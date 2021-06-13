@@ -45,6 +45,7 @@ class RecorderPython():
         writer=cv2.VideoWriter("selam.mp4", cv2.VideoWriter_fourcc(*"XVID"),10,pyautogui.size())
         while True:
             frame=np.array(pyautogui.screenshot())
+            frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
             writer.write(frame)
             if cv2.waitKey(1)==ord("q") or self.hold_down==True:
                 sys.exit()
