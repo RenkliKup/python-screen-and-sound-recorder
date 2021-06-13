@@ -1,4 +1,4 @@
-from src.start import RecorderPython
+from src.record import RecorderPython
 from tkinter import *
 
 window=Tk()
