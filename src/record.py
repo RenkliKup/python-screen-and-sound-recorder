@@ -9,7 +9,7 @@ from scipy.io.wavfile import write
 from moviepy.editor import *
 import os
 import time
-import alsaaudio, wave, numpy
+#import alsaaudio, wave, numpy
 class RecorderPython():
     def __init__(self,window,duration):
         self.duration=duration
@@ -104,7 +104,7 @@ class RecorderPython():
     def thread1(self):
         t3=threading.Thread(target=lambda:self.stop())
         t3.start()
-        
+
     def combine(self):
         clip = VideoFileClip("selam.mp4")
         print(time.strftime("%x %X "))
