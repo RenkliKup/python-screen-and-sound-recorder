@@ -6,7 +6,6 @@ import numpy as np
 import threading
 from moviepy.editor import *
 import os
-import time
 import pyaudio
 import wave
 import math
