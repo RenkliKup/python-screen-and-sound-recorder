@@ -14,7 +14,6 @@ import wave
 import math
 from mss import mss
 from PIL import Image
-#import alsaaudio, wave, numpy
 class RecorderPython():
     def __init__(self,window):
         
@@ -40,17 +39,14 @@ class RecorderPython():
         self.before_time=time.time()
         self.end=True
         self.hold_down=True
-        
-
     def play(self):
         self.end=False
         self.playButton.configure(state=DISABLED)
-        
         if self.hold_down==True:
             self.hold_down=False
             return 0
         self.time_label.after(1,lambda:self.play())
-    
+
     def rec(self):
         screen=mss()
         monitor = {"top": 0, "left": 0, "width": 1920, "height": 1080}
@@ -59,11 +55,7 @@ class RecorderPython():
         li=[]
         while True:
             last_time=time.time()
-            
-           
-            
             duration=math.ceil(int(time.time()-self.before_time))
-
             frame=screen.grab(monitor)
             frame=Image.frombytes("RGB",frame.size,frame.rgb)
             frame=cv2.cvtColor(np.array(frame),cv2.COLOR_BGR2RGB)
@@ -72,18 +64,11 @@ class RecorderPython():
             writer.write(frame)
             if self.hold_down==True:
                 break
-            
-            
             self.time_label.configure(text=str(duration))
-            
         writer.release()
-        print("ssda")
-        print(min(li))
         cv2.destroyAllWindows()
-
-        
         self.combine()
-        
+
     def voice_record(self):
         CHUNK = 1024
         FORMAT = pyaudio.paInt16
@@ -91,25 +76,17 @@ class RecorderPython():
         RATE = 44100
         WAVE_OUTPUT_FILENAME = "output.wav"
         p = pyaudio.PyAudio()
-
         stream = p.open(format=FORMAT,
                         channels=CHANNELS,
                         rate=RATE,
                         input=True,
                         frames_per_buffer=CHUNK,input_device_index=2)
-
-        print("* recording")
-
         frames = []
         while True:  
             data = stream.read(CHUNK)
             frames.append(data)
             if cv2.waitKey(1)==ord("q") or self.hold_down==True:
                 break
-            
-
-        print("* done recording")
-
         stream.stop_stream()
         stream.close()
         p.terminate()
@@ -120,20 +97,15 @@ class RecorderPython():
         wf.setframerate(RATE)
         wf.writeframes(b''.join(frames))
         wf.close()
-
-        
         
     def thread(self):
         threading.Thread(target=lambda:self.voice_record()).start()
         threading.Thread(target=lambda:self.rec()).start()
-        #threading.Thread(target=lambda:self.play()).start()
-        
-    
+        threading.Thread(target=lambda:self.play()).start()
     def thread1(self):
         threading.Thread(target=lambda:self.stop()).start()
 
     def combine(self):
-        
         audioclip = AudioFileClip("output.wav")
         audioclip=audioclip.subclip(0,int(audioclip.duration))
         clip = VideoFileClip("output.avi")
