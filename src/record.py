@@ -12,6 +12,7 @@ import math
 from mss import mss
 from PIL import Image
 class RecorderPython():
+    
     def __init__(self,window):
         
         self.end=False
