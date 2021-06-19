@@ -9,10 +9,15 @@ from scipy.io.wavfile import write
 from moviepy.editor import *
 import os
 import time
+import pyaudio
+import wave
+import math
+from mss import mss
+from PIL import Image
 #import alsaaudio, wave, numpy
 class RecorderPython():
-    def __init__(self,window,duration):
-        self.duration=duration
+    def __init__(self,window):
+        
         self.end=False
         
         self.hold_down=False
@@ -29,7 +34,7 @@ class RecorderPython():
         stopButton.pack(side="left")
         self.time_label=Label(frame2,text="sc")
         self.time_label.pack()
-
+        
     def stop(self):
         self.playButton.configure(state=ACTIVE)
         self.before_time=time.time()
@@ -40,7 +45,6 @@ class RecorderPython():
     def play(self):
         self.end=False
         self.playButton.configure(state=DISABLED)
-        self.time_label.configure(text=int(time.time()-self.before_time))
         
         if self.hold_down==True:
             self.hold_down=False
@@ -48,70 +52,100 @@ class RecorderPython():
         self.time_label.after(1,lambda:self.play())
     
     def rec(self):
+        screen=mss()
+        monitor = {"top": 0, "left": 0, "width": 1920, "height": 1080}
         self.before_time=time.time()
-        writer=cv2.VideoWriter("selam.mp4", cv2.VideoWriter_fourcc(*"XVID"),10,pyautogui.size())
+        writer=cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc(*"DIVX"),16.6,pyautogui.size())
+        li=[]
         while True:
-            duration=int(time.time()-self.before_time)
-            frame=np.array(pyautogui.screenshot())
-            frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+            last_time=time.time()
+            
+           
+            
+            duration=math.ceil(int(time.time()-self.before_time))
+
+            frame=screen.grab(monitor)
+            frame=Image.frombytes("RGB",frame.size,frame.rgb)
+            frame=cv2.cvtColor(np.array(frame),cv2.COLOR_BGR2RGB)
+            frame=cv2.putText(frame,f"{int(1/(time.time()-last_time))}",(100,100),cv2.FONT_HERSHEY_SIMPLEX,1,(255,0,0),1,cv2.LINE_AA)
+            li.append(int(1/(time.time()-last_time)))
             writer.write(frame)
+            if self.hold_down==True:
+                break
+            
+            
+            self.time_label.configure(text=str(duration))
+            
+        writer.release()
+        print("ssda")
+        print(min(li))
+        cv2.destroyAllWindows()
+
+        
+        self.combine()
+        
+    def voice_record(self):
+        CHUNK = 1024
+        FORMAT = pyaudio.paInt16
+        CHANNELS = 2
+        RATE = 44100
+        WAVE_OUTPUT_FILENAME = "output.wav"
+        p = pyaudio.PyAudio()
+
+        stream = p.open(format=FORMAT,
+                        channels=CHANNELS,
+                        rate=RATE,
+                        input=True,
+                        frames_per_buffer=CHUNK,input_device_index=2)
+
+        print("* recording")
+
+        frames = []
+        while True:  
+            data = stream.read(CHUNK)
+            frames.append(data)
             if cv2.waitKey(1)==ord("q") or self.hold_down==True:
                 break
             
-            self.time_label.configure(text=str(duration))
-            if int(duration)==self.duration or int(duration)==self.duration:
-                self.thread1()
-                self.thread1()
-                break
-        
-        writer.release()
-        cv2.destroyAllWindows()
-        
-        self.combine()
-        return 0
-    def voice_record(self):
-        
-        sampleRate=44100
-        voice=sd.rec(int(self.duration*sampleRate),channels=1,samplerate=sampleRate)
-        sd.wait()
-        
-        '''
-        inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE)
-        inp.setchannels(1)
-        inp.setrate(44100)
-        inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
-        inp.setperiodsize(1024)
 
-        w = wave.open('test.wav', 'w')
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(44100)
+        print("* done recording")
 
-        while True:
-            l, data = inp.read()
-            a = numpy.fromstring(data, dtype='int16')
-            print numpy.abs(a).mean()
-            w.writeframes(data)
-            write("output.wav",sampleRate,voice)'''
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+
+        wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+        wf.setnchannels(CHANNELS)
+        wf.setsampwidth(p.get_sample_size(FORMAT))
+        wf.setframerate(RATE)
+        wf.writeframes(b''.join(frames))
+        wf.close()
+
+        
+        
     def thread(self):
-        t3=threading.Thread(target=lambda:self.voice_record())
-        t3.start()
-        t1 = threading.Thread(target=lambda:self.rec())
-        t1.start()
-        t2 = threading.Thread(target=lambda:self.play())
-        t2.start()
+        threading.Thread(target=lambda:self.voice_record()).start()
+        threading.Thread(target=lambda:self.rec()).start()
+        #threading.Thread(target=lambda:self.play()).start()
+        
     
     def thread1(self):
-        t3=threading.Thread(target=lambda:self.stop())
-        t3.start()
+        threading.Thread(target=lambda:self.stop()).start()
 
     def combine(self):
-        clip = VideoFileClip("selam.mp4")
-        print(time.strftime("%x %X "))
-        clip = clip.subclip(0, self.duration)
-        audioclip = AudioFileClip("output.wav").subclip(0, self.duration)
+        
+        audioclip = AudioFileClip("output.wav")
+        audioclip=audioclip.subclip(0,int(audioclip.duration))
+        clip = VideoFileClip("output.avi")
+        clip = clip.subclip(0, int(clip.duration))
+        
         videoclip = clip.set_audio(audioclip)
-        print(videoclip.filename)
-        print(videoclip.ipython_display())
+        videoclip.ipython_display(maxduration=2500)
         t=time.strftime('%x %X').replace(':','.').replace("/",".").replace("\\", ".")
+        clip.close()
+        videoclip.close()
         os.rename("__temp__.mp4", f"{t}.mp4")
+        os.remove("output.avi")
+        os.remove("output.wav")
+
+
