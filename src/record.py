@@ -4,8 +4,6 @@ import cv2
 import time
 import numpy as np
 import threading
-import sounddevice as sd
-from scipy.io.wavfile import write
 from moviepy.editor import *
 import os
 import time
