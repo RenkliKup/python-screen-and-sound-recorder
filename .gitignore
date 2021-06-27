@@ -1,3 +1,7 @@
 *./rec.py
 rec.py
 rec
+ffmpeg.exe
+ffplay.exe
+ffprobe.exe
+src/colorDetect.py
